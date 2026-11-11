@@ -40,7 +40,6 @@
     position: relative;
   }
 
-  /* Animated background grid + glow */
   body::before {
     content: '';
     position: fixed; inset: 0;
@@ -576,7 +575,6 @@
     .msg-wrap { max-width: 82%; }
   }
 
-  /* Desktop-only: sidebar always visible */
   @media (min-width: 769px) {
     #chatArea { transform: none !important; }
   }
@@ -687,21 +685,31 @@
 </div>
 
 <script>
-  // ===== GANTI SESUAI SERVER ANDA =====
-  const WS_URL = "ws://gervhosting.my.id:5572";
-  // ====================================
+  // ===== KONFIGURASI SERVER =====
+  // Karena GitHub Pages (https) memblokir ws://, kita gunakan wss://
+  const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+  const WS_HOST = "gervhosting.my.id:5572";
+  const WS_URL = WS_PROTOCOL + WS_HOST;
+  // ==============================
 
   let ws = null;
   let myUsername = "";
   let activeChat = null;
   let friends = [];
   let pendingRequestFrom = null;
+  let reconnectAttempts = 0;
 
-  // ==== INIT WS ====
   function initWS() {
-    ws = new WebSocket(WS_URL);
+    console.log("Mencoba koneksi ke:", WS_URL);
+    try {
+      ws = new WebSocket(WS_URL);
+    } catch (err) {
+      return handleConnectionError();
+    }
 
     ws.onopen = () => {
+      console.log("✅ Terhubung ke server!");
+      reconnectAttempts = 0;
       if (myUsername) {
         ws.send(JSON.stringify({ type: 'register', username: myUsername }));
       }
@@ -739,11 +747,26 @@
       }
     };
 
-    ws.onclose = () => {
-      console.log("Reconnecting...");
-      setTimeout(initWS, 3000);
+    ws.onclose = (event) => {
+      console.warn("❌ Terputus dari server. Kode:", event.code);
+      if (!event.wasClean && reconnectAttempts < 5) {
+        reconnectAttempts++;
+        setTimeout(initWS, 3000);
+      } else if (reconnectAttempts >= 5) {
+        alert("Gagal terhubung ke server. Pastikan server Pterodactyl menyala dan mendukung koneksi WSS (SSL).");
+      }
+    };
+
+    ws.onerror = () => {
+      console.error("⚠️ WebSocket error. Kemungkinan besar server tidak mendukung WSS atau sedang mati.");
     };
   }
+
+  // Jika ada error saat inisialisasi
+  function handleConnectionError() {
+    alert("Gagal inisialisasi WebSocket. Cek koneksi internet atau URL server.");
+  }
+
   initWS();
 
   // ==== LOGIN ====
@@ -754,7 +777,7 @@
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: 'register', username: myUsername }));
     } else {
-      alert("Menghubungkan ke server...");
+      alert("Sedang menghubungkan ke server... (Jika macet, server Anda belum mendukung WSS/HTTPS)");
     }
   }
   document.getElementById('inputUsername').addEventListener('keypress', e => {
@@ -904,7 +927,6 @@
     }[c]));
   }
 
-  // close modal klik luar
   document.getElementById('modalAdd').addEventListener('click', (e) => {
     if (e.target.id === 'modalAdd') closeAddFriend();
   });
