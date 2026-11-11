@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Nexus • Cyber Chat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-0: #05050a;
+    --bg-1: #0a0a14;
+    --bg-2: #10101e;
+    --panel: rgba(16, 16, 30, 0.65);
+    --panel-solid: #10101e;
+    --border: rgba(120, 120, 255, 0.12);
+    --border-bright: rgba(0, 255, 255, 0.3);
+    --text: #e8e8f0;
+    --text-dim: #6b6b8a;
+    --cyan: #00f0ff;
+    --purple: #a855f7;
+    --pink: #ff2d9b;
+    --green: #00ff88;
+    --red: #ff3366;
+    --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.4);
+    --glow-purple: 0 0 20px rgba(168, 85, 247, 0.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    font-family: 'Outfit', system-ui, sans-serif;
+    background: var(--bg-0);
+    color: var(--text);
+    position: relative;
+  }
+
+  /* Animated background grid + glow */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(120, 120, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120, 120, 255, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(0, 240, 255, 0.08), transparent 30%),
+      radial-gradient(circle at 80% 70%, rgba(168, 85, 247, 0.1), transparent 30%);
+    animation: auraFloat 20s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+  @keyframes auraFloat {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    50% { transform: translate(-3%, -3%) rotate(5deg); }
+  }
+
+  /* ============ LOGIN ============ */
+  #loginScreen {
+    position: fixed; inset: 0; z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    background: radial-gradient(circle at 50% 50%, rgba(10,10,20,0.95), var(--bg-0));
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  #loginScreen.hidden {
+    opacity: 0; transform: scale(1.05);
+    pointer-events: none;
+  }
+  .login-card {
+    position: relative;
+    width: 100%; max-width: 380px;
+    padding: 48px 32px 36px;
+    background: var(--panel);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05);
+    animation: popIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+  }
+  .login-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyan), var(--purple), transparent);
+    animation: scanLine 3s linear infinite;
+  }
+  @keyframes scanLine {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  @keyframes popIn {
+    0% { opacity: 0; transform: scale(0.9) translateY(20px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .logo-orb {
+    width: 80px; height: 80px;
+    margin: 0 auto 24px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, var(--cyan), var(--purple) 70%);
+    box-shadow: var(--glow-cyan), 0 0 40px rgba(168, 85, 247, 0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    animation: orbPulse 3s ease-in-out infinite;
+  }
+  @keyframes orbPulse {
+    0%, 100% { transform: scale(1); box-shadow: var(--glow-cyan), 0 0 40px rgba(168, 85, 247, 0.4); }
+    50% { transform: scale(1.05); box-shadow: var(--glow-cyan), 0 0 60px rgba(168, 85, 247, 0.6); }
+  }
+
+  .login-card h1 {
+    text-align: center; font-size: 32px; font-weight: 800;
+    letter-spacing: -1px; margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .login-card .subtitle {
+    text-align: center; font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--text-dim);
+    letter-spacing: 3px; text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+  .input-group {
+    position: relative; margin-bottom: 16px;
+  }
+  .input-group input {
+    width: 100%; padding: 16px 18px 16px 48px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    color: var(--text); font-size: 15px; font-family: inherit;
+    outline: none; transition: 0.3s;
+  }
+  .input-group input:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.15), var(--glow-cyan);
+    background: rgba(0,0,0,0.6);
+  }
+  .input-group .icon {
+    position: absolute; left: 16px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px; opacity: 0.6; pointer-events: none;
+  }
+
+  .btn-primary {
+    width: 100%; padding: 16px;
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    border: none; border-radius: 14px;
+    color: #000; font-weight: 700; font-size: 15px;
+    font-family: inherit; letter-spacing: 0.5px;
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: 0.3s;
+    box-shadow: 0 8px 24px rgba(168, 85, 247, 0.3);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0, 240, 255, 0.4); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transform: translateX(-100%);
+  }
+  .btn-primary:hover::after { animation: shimmer 0.8s; }
+  @keyframes shimmer { 100% { transform: translateX(100%); } }
+
+  /* ============ APP LAYOUT ============ */
+  #app {
+    position: relative; z-index: 1;
+    height: 100vh; display: flex;
+    overflow: hidden;
+  }
+
+  /* ============ SIDEBAR ============ */
+  #sidebar {
+    width: 340px; flex-shrink: 0;
+    background: var(--panel);
+    backdrop-filter: blur(24px);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 10;
+  }
+  .sidebar-top {
+    padding: 20px 20px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .me {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .avatar {
+    width: 46px; height: 46px; border-radius: 14px;
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 18px; color: #000;
+    box-shadow: var(--glow-cyan);
+    position: relative;
+  }
+  .avatar::after {
+    content: ''; position: absolute; bottom: -2px; right: -2px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--green); border: 2px solid var(--bg-1);
+    box-shadow: 0 0 8px var(--green);
+  }
+  .me-info .me-name {
+    font-weight: 700; font-size: 15px;
+    letter-spacing: -0.2px;
+  }
+  .me-info .me-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--green); letter-spacing: 1px;
+    text-transform: uppercase; margin-top: 2px;
+  }
+  .icon-btn {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: rgba(0, 240, 255, 0.08);
+    border: 1px solid var(--border-bright);
+    color: var(--cyan); font-size: 22px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: 0.2s;
+  }
+  .icon-btn:hover {
+    background: var(--cyan); color: #000;
+    box-shadow: var(--glow-cyan);
+    transform: scale(1.05);
+  }
+
+  .search {
+    padding: 16px 20px;
+  }
+  .search input {
+    width: 100%; padding: 11px 16px;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text); font-size: 13px; font-family: inherit;
+    outline: none; transition: 0.2s;
+  }
+  .search input:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(0,240,255,0.1); }
+
+  .section-title {
+    padding: 8px 20px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  #friendList {
+    flex: 1; overflow-y: auto;
+    padding: 0 12px 20px;
+  }
+  #friendList::-webkit-scrollbar { width: 4px; }
+  #friendList::-webkit-scrollbar-thumb { background: rgba(0,240,255,0.3); border-radius: 10px; }
+
+  .friend-item {
+    padding: 12px 14px; border-radius: 14px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer; transition: 0.2s;
+    margin-bottom: 4px; position: relative;
+    border: 1px solid transparent;
+  }
+  .friend-item:hover {
+    background: rgba(0, 240, 255, 0.05);
+    border-color: var(--border);
+  }
+  .friend-item.active {
+    background: linear-gradient(135deg, rgba(0,240,255,0.12), rgba(168,85,247,0.12));
+    border-color: var(--border-bright);
+    box-shadow: inset 0 0 20px rgba(0,240,255,0.05);
+  }
+  .friend-item.active::before {
+    content: ''; position: absolute; left: 0; top: 20%; bottom: 20%;
+    width: 3px; border-radius: 3px;
+    background: var(--cyan); box-shadow: 0 0 10px var(--cyan);
+  }
+  .friend-avatar {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: var(--bg-2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: var(--cyan);
+    font-size: 16px; flex-shrink: 0;
+  }
+  .friend-item.active .friend-avatar {
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    color: #000;
+  }
+  .friend-info { flex: 1; min-width: 0; }
+  .friend-name { font-weight: 600; font-size: 14px; }
+  .friend-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--text-dim);
+    letter-spacing: 0.5px; margin-top: 2px;
+  }
+
+  .empty-state {
+    padding: 50px 24px; text-align: center;
+    color: var(--text-dim); font-size: 13px; line-height: 1.7;
+  }
+  .empty-state .emoji { font-size: 40px; margin-bottom: 12px; display: block; opacity: 0.5; }
+
+  /* ============ CHAT ============ */
+  #chatArea {
+    flex: 1; display: flex; flex-direction: column;
+    position: relative; min-width: 0;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  #chatHeader {
+    padding: 16px 24px;
+    background: var(--panel);
+    backdrop-filter: blur(24px);
+    border-bottom: 1px solid var(--border);
+    display: none; align-items: center; gap: 14px;
+    z-index: 5;
+  }
+  #chatHeader.show { display: flex; }
+  .back-btn {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    color: var(--text); cursor: pointer;
+    display: none; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .chat-user { flex: 1; }
+  .chat-user h3 {
+    font-size: 16px; font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .chat-user span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--green);
+    letter-spacing: 1px; text-transform: uppercase;
+    display: flex; align-items: center; gap: 4px; margin-top: 2px;
+  }
+  .chat-user span::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 6px var(--green);
+  }
+
+  #chatLog {
+    flex: 1; overflow-y: auto;
+    padding: 24px;
+    display: flex; flex-direction: column; gap: 10px;
+    scroll-behavior: smooth;
+  }
+  #chatLog::-webkit-scrollbar { width: 4px; }
+  #chatLog::-webkit-scrollbar-thumb { background: rgba(0,240,255,0.3); border-radius: 10px; }
+
+  .welcome {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 40px; text-align: center;
+  }
+  .welcome-orb {
+    width: 100px; height: 100px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, var(--cyan), var(--purple));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 44px; margin-bottom: 24px;
+    box-shadow: var(--glow-cyan), var(--glow-purple);
+    animation: orbPulse 3s ease-in-out infinite;
+  }
+  .welcome h2 {
+    font-size: 22px; font-weight: 700; margin-bottom: 10px;
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .welcome p {
+    color: var(--text-dim); font-size: 14px; line-height: 1.6;
+    max-width: 320px;
+  }
+
+  .msg-wrap {
+    display: flex; flex-direction: column;
+    max-width: 70%;
+    animation: msgIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .msg-wrap.me { align-self: flex-end; align-items: flex-end; }
+  .msg-wrap.them { align-self: flex-start; align-items: flex-start; }
+
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .msg {
+    padding: 12px 16px;
+    border-radius: 18px;
+    font-size: 14.5px; line-height: 1.5;
+    word-wrap: break-word; word-break: break-word;
+    position: relative;
+  }
+  .msg.me {
+    background: linear-gradient(135deg, var(--cyan), #4f46e5);
+    color: #fff; border-bottom-right-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 240, 255, 0.25);
+  }
+  .msg.them {
+    background: rgba(30, 30, 50, 0.9);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 6px;
+    backdrop-filter: blur(8px);
+  }
+  .msg-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--text-dim);
+    letter-spacing: 0.5px; margin-top: 4px; padding: 0 6px;
+  }
+
+  #chatInputArea {
+    padding: 16px 24px 20px;
+    background: var(--panel);
+    backdrop-filter: blur(24px);
+    border-top: 1px solid var(--border);
+    display: none; gap: 12px; align-items: center;
+  }
+  #chatInputArea.show { display: flex; }
+  #chatInputArea input {
+    flex: 1; padding: 15px 20px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    color: var(--text); font-size: 14px; font-family: inherit;
+    outline: none; transition: 0.2s;
+  }
+  #chatInputArea input:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 3px rgba(0,240,255,0.1);
+  }
+  .send-btn {
+    width: 52px; height: 52px; border-radius: 16px;
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    border: none; color: #000; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: 0.2s; flex-shrink: 0;
+    box-shadow: 0 6px 20px rgba(0,240,255,0.3);
+  }
+  .send-btn:hover { transform: scale(1.05); box-shadow: 0 8px 28px rgba(0,240,255,0.5); }
+  .send-btn:active { transform: scale(0.95); }
+  .send-btn svg { width: 22px; height: 22px; }
+
+  /* ============ MODAL ============ */
+  .modal {
+    display: none; position: fixed; inset: 0;
+    z-index: 500; padding: 20px;
+    background: rgba(5, 5, 10, 0.85);
+    backdrop-filter: blur(8px);
+    align-items: center; justify-content: center;
+  }
+  .modal.show { display: flex; }
+  .modal-card {
+    background: var(--panel-solid);
+    border: 1px solid var(--border-bright);
+    border-radius: 22px;
+    padding: 28px;
+    width: 100%; max-width: 400px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.8), 0 0 40px rgba(0, 240, 255, 0.1);
+    animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative; overflow: hidden;
+  }
+  .modal-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), var(--purple), transparent);
+  }
+  .modal-card h3 {
+    font-size: 20px; font-weight: 700; margin-bottom: 6px;
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .modal-card p {
+    color: var(--text-dim); font-size: 13px;
+    line-height: 1.5; margin-bottom: 20px;
+  }
+  .modal-card .input-group { margin-bottom: 20px; }
+  .modal-btns { display: flex; gap: 10px; }
+  .btn-ghost {
+    flex: 1; padding: 14px; border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    color: var(--text); font-weight: 600; font-size: 14px;
+    font-family: inherit; cursor: pointer; transition: 0.2s;
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,0.1); }
+  .btn-grad {
+    flex: 1; padding: 14px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    border: none; color: #000; font-weight: 700; font-size: 14px;
+    font-family: inherit; cursor: pointer; transition: 0.2s;
+  }
+  .btn-grad:hover { box-shadow: 0 8px 24px rgba(0,240,255,0.35); }
+
+  /* ============ NOTIFIKASI REQUEST ============ */
+  #notifRequest {
+    display: none;
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(200%);
+    z-index: 600;
+    width: calc(100% - 32px); max-width: 380px;
+    background: var(--panel-solid);
+    border: 1px solid var(--border-bright);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.8), 0 0 40px rgba(0, 240, 255, 0.15);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  #notifRequest.show {
+    display: block;
+    transform: translateX(-50%) translateY(0);
+  }
+  #notifRequest h4 {
+    font-size: 15px; font-weight: 700;
+    color: var(--cyan); margin-bottom: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.5px; text-transform: uppercase;
+    font-size: 11px;
+  }
+  #notifRequest p {
+    font-size: 14px; color: var(--text);
+    margin-bottom: 16px; line-height: 1.5;
+  }
+  #notifRequest .modal-btns .btn-ghost { flex: 1; padding: 11px; font-size: 13px; }
+  #notifRequest .modal-btns .btn-grad { flex: 1; padding: 11px; font-size: 13px; }
+
+  /* ============ TOAST ============ */
+  .toast {
+    position: fixed; top: 24px; left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: var(--panel-solid);
+    border: 1px solid var(--border-bright);
+    color: var(--text);
+    padding: 14px 22px; border-radius: 14px;
+    font-size: 13px; font-weight: 600;
+    z-index: 9999;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 20px rgba(0,240,255,0.2);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: calc(100% - 32px);
+    text-align: center;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ============ MOBILE ============ */
+  @media (max-width: 768px) {
+    #sidebar {
+      position: absolute; inset: 0;
+      width: 100%; border-right: none;
+      z-index: 20;
+    }
+    #sidebar.hide { transform: translateX(-100%); }
+    #chatArea {
+      position: absolute; inset: 0;
+      background: var(--bg-0); z-index: 15;
+      transform: translateX(100%);
+    }
+    #chatArea.show {
+      transform: translateX(0);
+    }
+    .back-btn { display: flex; }
+    #chatLog { padding: 16px; }
+    .msg-wrap { max-width: 82%; }
+  }
+
+  /* Desktop-only: sidebar always visible */
+  @media (min-width: 769px) {
+    #chatArea { transform: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="logo-orb">⚡</div>
+    <h1>NEXUS</h1>
+    <div class="subtitle">Encrypted • Private • Real-time</div>
+    
+    <div class="input-group">
+      <span class="icon">👤</span>
+      <input id="inputUsername" placeholder="Username kamu..." maxlength="30" autocomplete="off">
+    </div>
+    <button class="btn-primary" onclick="login()">Masuk Sistem →</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div class="sidebar-top">
+      <div class="me">
+        <div class="avatar" id="myAvatar">?</div>
+        <div class="me-info">
+          <div class="me-name" id="myNameDisplay">-</div>
+          <div class="me-status">● Online</div>
+        </div>
+      </div>
+      <button class="icon-btn" onclick="showAddFriend()" title="Tambah Teman">+</button>
+    </div>
+
+    <div class="search">
+      <input placeholder="🔍 Cari teman..." oninput="filterFriends(this.value)">
+    </div>
+
+    <div class="section-title" id="contactsTitle">Kontak</div>
+
+    <div id="friendList">
+      <div class="empty-state">
+        <span class="emoji">👋</span>
+        Belum ada kontak.<br>Tekan <b style="color: var(--cyan)">+</b> untuk menambahkan.
+      </div>
+    </div>
+  </aside>
+
+  <!-- CHAT -->
+  <main id="chatArea">
+    <header id="chatHeader">
+      <button class="back-btn" onclick="closeChatMobile()">←</button>
+      <div class="friend-avatar" id="chatAvatar">-</div>
+      <div class="chat-user">
+        <h3 id="chatTitle">-</h3>
+        <span>Online</span>
+      </div>
+    </header>
+
+    <div id="chatLog">
+      <div class="welcome">
+        <div class="welcome-orb">💬</div>
+        <h2>Selamat Datang</h2>
+        <p>Pilih kontak di sidebar untuk memulai<br>percakapan pribadi yang aman.</p>
+      </div>
+    </div>
+
+    <div id="chatInputArea">
+      <input id="inputMsg" placeholder="Tulis pesan..." onkeypress="if(event.key==='Enter') sendMessage()">
+      <button class="send-btn" onclick="sendMessage()" title="Kirim">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL ADD -->
+<div id="modalAdd" class="modal">
+  <div class="modal-card">
+    <h3>+ Tambah Kontak</h3>
+    <p>Masukkan username teman yang ingin kamu ajak mengobrol.</p>
+    <div class="input-group">
+      <span class="icon">👤</span>
+      <input id="inputTargetFriend" placeholder="Username teman..." maxlength="30" onkeypress="if(event.key==='Enter') sendFriendRequest()">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-ghost" onclick="closeAddFriend()">Batal</button>
+      <button class="btn-grad" onclick="sendFriendRequest()">Kirim</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFIKASI REQUEST -->
+<div id="notifRequest">
+  <h4>🔔 Permintaan Pertemanan</h4>
+  <p id="notifText">-</p>
+  <div class="modal-btns">
+    <button class="btn-ghost" onclick="tolakRequest()">Tolak</button>
+    <button class="btn-grad" onclick="terimaRequest()">Terima</button>
+  </div>
+</div>
+
+<script>
+  // ===== GANTI SESUAI SERVER ANDA =====
+  const WS_URL = "ws://gervhosting.my.id:5572";
+  // ====================================
+
+  let ws = null;
+  let myUsername = "";
+  let activeChat = null;
+  let friends = [];
+  let pendingRequestFrom = null;
+
+  // ==== INIT WS ====
+  function initWS() {
+    ws = new WebSocket(WS_URL);
+
+    ws.onopen = () => {
+      if (myUsername) {
+        ws.send(JSON.stringify({ type: 'register', username: myUsername }));
+      }
+    };
+
+    ws.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+
+      if (data.type === 'registered') {
+        myUsername = data.username;
+        const login = document.getElementById('loginScreen');
+        login.classList.add('hidden');
+        setTimeout(() => login.style.display = 'none', 500);
+        document.getElementById('myNameDisplay').innerText = myUsername;
+        document.getElementById('myAvatar').innerText = myUsername.charAt(0).toUpperCase();
+      }
+
+      if (data.type === 'friend_request_received') {
+        pendingRequestFrom = data.from;
+        document.getElementById('notifText').innerHTML = `<b style="color:var(--cyan)">${escapeHtml(data.from)}</b> ingin berteman denganmu.`;
+        document.getElementById('notifRequest').classList.add('show');
+      }
+
+      if (data.type === 'friend_accepted') {
+        tampilkanToast(`✓ ${data.by} menerima pertemananmu`);
+        tambahTemanKeList(data.by);
+      }
+
+      if (data.type === 'message') {
+        if (data.from === activeChat) {
+          tampilkanPesan(data);
+        } else if (data.from !== myUsername) {
+          tampilkanToast(`💬 Pesan baru dari ${data.from}`);
+        }
+      }
+    };
+
+    ws.onclose = () => {
+      console.log("Reconnecting...");
+      setTimeout(initWS, 3000);
+    };
+  }
+  initWS();
+
+  // ==== LOGIN ====
+  function login() {
+    const uname = document.getElementById('inputUsername').value.trim();
+    if (!uname) return alert("Username tidak boleh kosong");
+    myUsername = uname;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'register', username: myUsername }));
+    } else {
+      alert("Menghubungkan ke server...");
+    }
+  }
+  document.getElementById('inputUsername').addEventListener('keypress', e => {
+    if (e.key === 'Enter') login();
+  });
+
+  // ==== TOAST ====
+  function tampilkanToast(pesan) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerText = pesan;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 400);
+    }, 3000);
+  }
+
+  // ==== TEMAN ====
+  function tambahTemanKeList(nama) {
+    if (!friends.includes(nama)) {
+      friends.push(nama);
+      renderFriendList();
+    }
+  }
+
+  function renderFriendList(filter = "") {
+    const list = document.getElementById('friendList');
+    const title = document.getElementById('contactsTitle');
+    const filtered = friends.filter(f => f.toLowerCase().includes(filter.toLowerCase()));
+
+    title.innerText = `Kontak (${friends.length})`;
+
+    if (friends.length === 0) {
+      list.innerHTML = `<div class="empty-state">
+        <span class="emoji">👋</span>
+        Belum ada kontak.<br>Tekan <b style="color: var(--cyan)">+</b> untuk menambahkan.
+      </div>`;
+      return;
+    }
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="empty-state">Tidak ada yang cocok.</div>`;
+      return;
+    }
+
+    list.innerHTML = '';
+    filtered.forEach(f => {
+      const div = document.createElement('div');
+      div.className = `friend-item ${activeChat === f ? 'active' : ''}`;
+      div.innerHTML = `
+        <div class="friend-avatar">${f.charAt(0).toUpperCase()}</div>
+        <div class="friend-info">
+          <div class="friend-name">${escapeHtml(f)}</div>
+          <div class="friend-sub">Ketuk untuk chat</div>
+        </div>
+      `;
+      div.onclick = () => bukaChat(f);
+      list.appendChild(div);
+    });
+  }
+
+  function filterFriends(val) { renderFriendList(val); }
+
+  function showAddFriend() {
+    document.getElementById('modalAdd').classList.add('show');
+    setTimeout(() => document.getElementById('inputTargetFriend').focus(), 100);
+  }
+  function closeAddFriend() {
+    document.getElementById('modalAdd').classList.remove('show');
+    document.getElementById('inputTargetFriend').value = '';
+  }
+
+  function sendFriendRequest() {
+    const target = document.getElementById('inputTargetFriend').value.trim();
+    if (!target) return;
+    if (target === myUsername) return alert("Tidak bisa menambahkan diri sendiri");
+    if (friends.includes(target)) return alert("Sudah ada di kontak");
+
+    ws.send(JSON.stringify({ type: 'friend_request', target }));
+    closeAddFriend();
+    tampilkanToast(`→ Permintaan dikirim ke ${target}`);
+  }
+
+  function terimaRequest() {
+    if (!pendingRequestFrom) return;
+    ws.send(JSON.stringify({ type: 'friend_accept', target: pendingRequestFrom }));
+    tambahTemanKeList(pendingRequestFrom);
+    document.getElementById('notifRequest').classList.remove('show');
+    pendingRequestFrom = null;
+  }
+  function tolakRequest() {
+    document.getElementById('notifRequest').classList.remove('show');
+    pendingRequestFrom = null;
+  }
+
+  // ==== CHAT ====
+  function bukaChat(nama) {
+    activeChat = nama;
+    renderFriendList(document.querySelector('.search input').value);
+
+    document.getElementById('chatHeader').classList.add('show');
+    document.getElementById('chatTitle').innerText = nama;
+    document.getElementById('chatAvatar').innerText = nama.charAt(0).toUpperCase();
+    document.getElementById('chatInputArea').classList.add('show');
+    document.getElementById('chatLog').innerHTML = '';
+    document.getElementById('inputMsg').focus();
+
+    if (window.innerWidth <= 768) {
+      document.getElementById('sidebar').classList.add('hide');
+      document.getElementById('chatArea').classList.add('show');
+    }
+  }
+
+  function closeChatMobile() {
+    document.getElementById('sidebar').classList.remove('hide');
+    document.getElementById('chatArea').classList.remove('show');
+    activeChat = null;
+    renderFriendList();
+  }
+
+  function sendMessage() {
+    const text = document.getElementById('inputMsg').value.trim();
+    if (!text || !activeChat) return;
+    ws.send(JSON.stringify({ type: 'message', to: activeChat, text }));
+    document.getElementById('inputMsg').value = '';
+  }
+
+  function tampilkanPesan(data) {
+    const log = document.getElementById('chatLog');
+    const wrap = document.createElement('div');
+    const isMe = data.from === myUsername;
+    wrap.className = `msg-wrap ${isMe ? 'me' : 'them'}`;
+
+    const waktu = new Date(data.ts).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    wrap.innerHTML = `
+      <div class="msg ${isMe ? 'me' : 'them'}">${escapeHtml(data.text)}</div>
+      <div class="msg-time">${waktu}</div>
+    `;
+    log.appendChild(wrap);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
+  }
+
+  // close modal klik luar
+  document.getElementById('modalAdd').addEventListener('click', (e) => {
+    if (e.target.id === 'modalAdd') closeAddFriend();
+  });
+</script>
+
+</body>
+</html>
